@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "RepRadar REST API",
   "main": "src/server.js",
-  "engines": { "node": "24.x" },
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "node --watch --env-file=.env src/server.js",
     "start": "node src/server.js"
@@ -13,6 +15,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongoose": "^9.11.1"
   }
 }
