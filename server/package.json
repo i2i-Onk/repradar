@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "node --watch --env-file=.env src/server.js",
     "start": "node src/server.js",
-    "test": "jest",
+    "test": "jest --runInBand",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -23,6 +23,13 @@
     "express-validator": "^7.3.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": [
+      "<rootDir>/tests/setupEnv.js"
+    ],
+    "testTimeout": 60000
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
