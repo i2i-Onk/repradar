@@ -1,8 +1,11 @@
 const express = require('express');
 const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
+app.use('/api/users', userRoutes);
+
 
 // Parse incoming JSON request bodies so they're available as req.body
 app.use(express.json());
