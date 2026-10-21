@@ -49,8 +49,11 @@
   issues in almost every server file. So many files at once suggested a global cause
   rather than real style problems. Ran `file src/app.js`: "with CRLF line terminators".
   `git config core.autocrlf` is `true`, so Git checks files out with Windows line
-  endings but stores them with LF; Prettier expects LF. The committed files are fine.
-  Formatted only my new files. Possible fix later: `"endOfLine": "auto"` in `.prettierrc`.
+  endings but stores them with LF; Prettier expects LF. Formatted only my new files,
+  then added `"endOfLine": "auto"` to `.prettierrc`. Re-running the check showed my
+  hypothesis was only partly right: 13 files still failed. Diffing them showed real
+  (cosmetic) differences: most are missing a final newline, and one long line in
+  `app.js` would be split. Line endings were hiding a second, smaller cause.
 - `react-router` installed as v8.5, not v7 as planned; imports from `'react-router'`
   work the same.
 
