@@ -146,7 +146,7 @@ server/src/
 
 ## Frontend (client/)
 
-**Stack:** React with Vite (JavaScript, not TypeScript), React Router v7
+**Stack:** React with Vite (JavaScript, not TypeScript), React Router v8.5
 (import from `'react-router'`), Context API + useReducer, Recharts (for charts later).
 
 ```
