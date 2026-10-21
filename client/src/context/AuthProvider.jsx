@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react';
 import { AuthContext } from './AuthContext';
 import * as authService from '../services/authService';
+import * as userService from '../services/userService';
 
 const TOKEN_KEY = 'repradar_token';
 
@@ -12,6 +13,8 @@ function authReducer(state, action) {
   switch (action.type) {
     case 'LOGIN_SUCCESS':
       return { user: action.user, token: action.token, status: 'authenticated' };
+    case 'USER_UPDATED':
+      return { ...state, user: action.user };
     case 'LOGOUT':
       return { user: null, token: null, status: 'guest' };
     default:
@@ -58,7 +61,13 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'LOGOUT' });
   }
 
-  const value = { ...state, login, signup, logout };
+  // Saves profile changes and shares the updated user with the whole app
+  async function updateProfile(changes) {
+    const { user } = await userService.updateMe(state.token, changes);
+    dispatch({ type: 'USER_UPDATED', user });
+  }
+
+  const value = { ...state, login, signup, logout, updateProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
