@@ -6,3 +6,10 @@
 body {
   margin: 0;
 }
+
+/* Mobile first: full width with a small gutter, capped on wide screens */
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
