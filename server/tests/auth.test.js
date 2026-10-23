@@ -25,6 +25,20 @@ describe('POST /api/auth/signup', () => {
     expect(res.status).toBe(409);
   });
 
+  it('gives 409, not 500, when two signups with the same email arrive at once', async () => {
+    // Both requests can pass the "does this email exist?" check before either
+    // saves; the database's unique index then rejects the second one
+    const results = await Promise.all([
+      request(app).post('/api/auth/signup').send(validUser),
+      request(app).post('/api/auth/signup').send(validUser),
+    ]);
+
+    expect(results.map((res) => res.status).sort()).toEqual([201, 409]);
+    expect(results.find((res) => res.status === 409).body.message).toBe(
+      'An account with this email already exists',
+    );
+  });
+
   it('rejects invalid input with 400 and names each problem field', async () => {
     const res = await request(app)
       .post('/api/auth/signup')
