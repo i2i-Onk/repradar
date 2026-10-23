@@ -130,3 +130,35 @@
 - Scope every query by the logged-in user, and test that another user gets nothing.
 - Return 404 rather than 403 for other users' data, so ids aren't confirmed.
 - Dates from `<input type="date">` have no time zone: decide on purpose how to store them.
+
+## Fri Oct 23 (evening): recovery dashboard
+- Workout logging PR (#5) merged.
+- **Built steps 4 and 5** on `feature/recovery-dashboard`, working autonomously with
+  Claude Code: `recovery.js`, `recommendations.js` and `distance.js` as pure functions
+  (all test-first), `GET /api/dashboard`, and a Dashboard page with colour-coded
+  muscle groups and suggestions. 49 new tests; 118 server tests pass.
+- **Counting days without knowing the time zone.** Workouts are saved at local noon,
+  so rounding (not flooring) the time since then gives the user's calendar-day
+  difference. Tests cover "today" both early morning and late night, and
+  "yesterday" just after midnight.
+- **A sort that worked by accident.** Never-trained groups used `Infinity`, and
+  `Infinity - Infinity` is `NaN`. The test passed because sort treats `NaN` as
+  "equal", but only by luck. Switched to a large finite number.
+- **Real data showed what unit tests couldn't.** After all tests passed, I ran the
+  recommendations against the real 670 exercises (in the test database). Biceps got
+  "Alternating bicep curls", "Alternating Biceps Curls With Dumbbell" and
+  "Alternating Dumbbell Curl": three copies of one exercise. Hypothesis: the
+  alphabetical tie-break picks wger's duplicate entries. Fix: skip a candidate with
+  the same equipment and mostly the same name words. A first version would also
+  have merged "Dumbbell Leg Curl" and "Lying Leg Curl" (different exercises); an
+  existing test caught that, so the rule now requires the same equipment. Also
+  excluded stretches, which showed up as chest and shoulder "training".
+- **Still weak:** alphabetical order favours odd names ("4-count burpees",
+  "Active Hang"). wger has no popularity data. Noted as a decision for later.
+- **Colour contrast:** checked the status text colours against WCAG AA. The green
+  was 4.52:1, just over the 4.5 minimum, so I darkened it to 5.58:1.
+
+**Key learnings**
+- Pure functions make the core rules testable without a database or a browser.
+- Passing unit tests don't prove the output is *good*: try it on real data.
+- An existing test can catch a fix that goes too far.
