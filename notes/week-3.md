@@ -176,3 +176,17 @@
   the dashboard.
 - **Lesson:** before debugging code, check *which* version is running: branch,
   server, and the tab itself.
+
+**Debugging: signup race condition (`fix/signup-race-condition`)**
+- **Symptom:** two signups with the same email at almost the same moment (e.g. a
+  double-click) could give the second one a 500 instead of a friendly 409.
+- **Hypothesis:** both requests pass the "does this email exist?" check before
+  either saves; the unique index on `email` then rejects the second with a
+  duplicate key error, which the error handler treats as unexpected (500).
+- **Test:** wrote a test that sends two identical signups at once. It failed about
+  half the time (a race: it depends on which request finishes hashing first), and
+  a failing run showed `[201, 500]` with `E11000 duplicate key ... email_1` in the log.
+- **Fix:** catch error code 11000 around `User.create` and turn it into the same
+  409 message as the normal duplicate check. The test then passed 10 of 10 runs.
+- **Lesson:** a check-then-save is never enough on its own; the database's unique
+  index is the real guarantee, so handle its error too. Same pattern as check-ins.
