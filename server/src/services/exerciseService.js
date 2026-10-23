@@ -1,5 +1,27 @@
 const Exercise = require('../models/Exercise');
 
+const DEFAULT_LIMIT = 50;
+
+// Makes characters like ( . * match themselves instead of acting as regex
+// syntax, so user search text can't break or slow down the query
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function listExercises({ search, muscle, equipment, limit = DEFAULT_LIMIT }) {
+  const filter = {};
+  if (search) filter.name = { $regex: escapeRegex(search), $options: 'i' };
+  if (muscle) filter.muscleGroups = muscle; // matches if the list contains it
+  if (equipment) filter.equipment = equipment;
+
+  const [exercises, total] = await Promise.all([
+    Exercise.find(filter).sort({ name: 1 }).limit(limit),
+    Exercise.countDocuments(filter),
+  ]);
+
+  return { exercises, total };
+}
+
 // Saves exercises imported from wger. Safe to run again and again: each
 // exercise is matched by its wgerId and updated if it exists, inserted if not.
 // Exercises not in the list are never touched or deleted.
@@ -30,4 +52,4 @@ async function upsertExercises(exercises) {
   };
 }
 
-module.exports = { upsertExercises };
+module.exports = { listExercises, upsertExercises };
