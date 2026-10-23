@@ -81,6 +81,39 @@ doesn't exist, so the API never confirms that another user's workout id is real.
 | `PUT /api/workouts/:id` | Replace its date and exercises |
 | `DELETE /api/workouts/:id` | Delete it → 204 |
 
+## Recovery and recommendations (the core logic)
+
+The rules that make RepRadar useful live in `server/src/utils/` as **pure
+functions**: they take plain data and return plain data, with no database and no
+`req`/`res`. That makes them easy to unit-test (they were written test-first) and
+easy to reuse.
+
+| File | Does |
+| --- | --- |
+| `recovery.js` | `calculateRecovery(workouts, now)`: for each of the 10 muscle groups, when it was last trained, how many days ago, and its status (`recent`, `due` or `neglected`). Never trained counts as neglected. Primary muscles only. |
+| `recommendations.js` | `recommendExercises({ recovery, exercises, equipment, goal })`: exercises for the 3 most neglected groups, plus a rep range for the goal |
+| `distance.js` | `distanceInMetres(a, b)`: Haversine distance, for gym check-ins (next step) |
+
+The thresholds (`RECOVERY_THRESHOLDS`: 0–2 days recent, 3–5 due, 6+ neglected) and
+rep ranges (`REP_RANGES`: strength 3–6, hypertrophy 8–12, general 10–15) are in
+`config/constants.js`.
+
+**Example — loading the dashboard (`GET /api/dashboard`):**
+`dashboardRoutes` → `requireAuth` → `dashboardController.get` →
+`dashboardService.getDashboard`, which loads the user and *only their* workouts,
+calls `calculateRecovery`, fetches candidate exercises (groups that need work,
+equipment the user has), and calls `recommendExercises`. The response is
+`{ recovery, recommendations: { repRange, groups }, thresholds, goal }`.
+
+**Recommendation rules, in order:**
+1. Most neglected first: never trained, then the most days since training.
+2. Skip groups trained in the last 2 days (still recovering).
+3. Only exercises with equipment the user has selected; no stretches.
+4. Focused exercises first (fewest muscle groups), then alphabetical.
+5. Up to 3 per group, skipping near-duplicates (same equipment and mostly the same
+   words, e.g. "Alternating bicep curls" and "Alternating Biceps Curls With Dumbbell").
+6. No exercise is suggested for two groups. A group with nothing usable is skipped.
+
 ## Exercise library and the seed script
 
 The exercises come from the free [wger](https://wger.de) API, imported once by
@@ -115,7 +148,7 @@ share one database, it's built to be safe to run again: a second run reports
   - `ExercisePicker` — searches the exercise library and adds the chosen exercise
 - `services/` — the only place that talks to the API. `api.js` has the shared
   `apiRequest` helper; there is one file per resource (`authService`, `userService`,
-  `exerciseService`, `workoutService`).
+  `exerciseService`, `workoutService`, `dashboardService`).
 - `context/` + `hooks/useAuth.js` — shared login state (see below)
 - `hooks/useDebouncedValue.js` — waits until the user stops typing before searching
 - `utils/formErrors.js` — turns the API's validation errors into one message per field
@@ -139,6 +172,11 @@ On success, `AuthProvider` stores the updated user, so every page sees the chang
 calls `exerciseService.listExercises()` → `apiRequest` → `GET /api/exercises`.
 If the filters change before an answer arrives, that older answer is ignored, so
 a slow response can't overwrite newer results.
+
+**The dashboard** (`/`, where users land after login) calls `getDashboard()` and
+shows one tile per muscle group, coloured by status and labelled in words, with a
+legend built from the thresholds in the response, then the suggestions below.
+The page never works out recovery itself; it only displays what the API sends.
 
 **Example — logging a workout:** `LogWorkout` renders `WorkoutForm`, which keeps
 the inputs as text while you type. On save, it converts them to the API's shape
@@ -187,6 +225,19 @@ bounce a logged-in user to the login screen.
   gives `YYYY-MM-DD`, and treating that as midnight UTC would show the previous day
   in North America. Noon stays on the same day in the time zones users are likely
   to be in. Dates more than a day in the future are rejected.
+- **Days since training are rounded, not floored.** Workouts are saved at local
+  noon, so rounding the time since then gives the user's own calendar-day
+  difference, without the server knowing their time zone.
+- **Recovery status comes from the server.** The thresholds live only in
+  `config/constants.js` and are sent with the dashboard, so the colours and the
+  legend can't disagree.
+- **"Only equipment the user has" is taken literally:** bodyweight exercises are
+  only suggested if Bodyweight is ticked in Settings.
+- **Colour is never the only signal:** each tile also says Recent, Due or
+  Neglected, and the status text passes WCAG AA contrast (4.5:1 or better).
+- **The dashboard loads all of a user's workouts** to find each group's last
+  session. Fine at this scale; a database aggregation would be the next step if
+  histories grew to thousands of workouts.
 - **Express 5 and `req.query`:** express-validator's clean-ups (like turning
   `"20"` into `20`) don't stick to `req.query` in Express 5, so controllers read
   validated query values with `matchedData(req)`.
@@ -197,4 +248,5 @@ bounce a logged-in user to the login screen.
 - Tests run one file at a time (`jest --runInBand`) because they share one database.
 - Each test file clears the database when it connects, so data left over from a
   crashed run or a manual check can't break the next run.
-- Pure functions in `utils/` (like `wgerMapping.js`) have unit tests that need no database.
+- Pure functions in `utils/` (`wgerMapping`, `recovery`, `recommendations`, `distance`) have
+  unit tests that need no database, written before the code.

@@ -209,6 +209,99 @@ button {
   gap: 0.25rem;
 }
 
+/* Dashboard: recovery colours. The status is also written in each tile,
+   so the meaning never depends on colour alone. */
+.status-recent {
+  --status-color: #1b6e2e;
+  --status-bg: #e6f4ea;
+}
+
+.status-due {
+  --status-color: #a15c00;
+  --status-bg: #fff4e0;
+}
+
+.status-neglected {
+  --status-color: #c62828;
+  --status-bg: #fdecea;
+}
+
+.recovery-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.9rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  background: var(--status-color);
+  vertical-align: middle;
+}
+
+/* Two tiles per row on phones, more on wider screens */
+.recovery-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.recovery-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+  border-left: 6px solid var(--status-color);
+  background: var(--status-bg);
+}
+
+.recovery-status {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--status-color);
+}
+
+.suggestion-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.suggestion-card {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem;
+}
+
+.suggestion-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.suggestion-card ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.suggestion-days {
+  font-weight: normal;
+  color: #555;
+}
+
 /* Workout history */
 .page-header {
   display: flex;
