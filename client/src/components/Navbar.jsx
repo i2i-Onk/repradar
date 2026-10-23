@@ -15,6 +15,10 @@ export default function Navbar() {
         <NavLink to="/" end>
           Dashboard
         </NavLink>
+        <NavLink to="/workouts/new">Log workout</NavLink>
+        <NavLink to="/workouts" end>
+          History
+        </NavLink>
         <NavLink to="/exercises">Exercises</NavLink>
         <NavLink to="/settings">Settings</NavLink>
       </nav>

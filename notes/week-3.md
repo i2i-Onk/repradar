@@ -105,3 +105,28 @@
 - "Passes on re-run" isn't a fix: reproduce the failure on purpose to prove the cause.
 - An upsert keyed on a stable outside id (`wgerId`) makes a seed safe to run again.
 - Look at what's being skipped before loosening a rule; the safe default can be "skip". 
+## Fri Oct 23 (later): workout logging
+- Exercise library PR (#4) merged; ran the seed on the shared database (670 exercises).
+- **Built workout logging** on `feature/workout-logging`, working autonomously with
+  Claude Code: Workout model, full CRUD API (`/api/workouts`), a Log Workout page
+  that adds exercises from the library with sets of reps and weight, and a history
+  page with edit and delete. 23 new API tests; 69 server tests pass.
+- **Privacy rule:** every workout query includes `user: req.userId`. Tests check that
+  another user gets 404 when reading, editing or deleting your workout, and that the
+  workout is unchanged or still there afterwards.
+- **Watched the tests fail first:** 20 of 22 failed before the routes existed. The 2
+  "not found → 404" tests passed by accident (no route also gives 404), the same
+  trap as the PATCH test on Wednesday.
+- **Time zone trap with dates.** A date input gives `2026-10-23`, and
+  `new Date('2026-10-23')` is midnight UTC, which is Oct 22 here (UTC−7). Saved the
+  chosen day at 12:00 local time instead. Checked in four time zones: the fix kept
+  the right day in all of them, while the naive version showed the day before in
+  Vancouver. Git Bash didn't pass `TZ=...` to Node on Windows (it printed
+  `undefined`), so I set `process.env.TZ` inside the script instead.
+- **CORS for PUT and DELETE:** the first pages to use these methods. Checked a
+  preflight for both against a temporary server on the test database; both allowed.
+
+**Key learnings**
+- Scope every query by the logged-in user, and test that another user gets nothing.
+- Return 404 rather than 403 for other users' data, so ids aren't confirmed.
+- Dates from `<input type="date">` have no time zone: decide on purpose how to store them.
