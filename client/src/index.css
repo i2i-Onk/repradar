@@ -343,3 +343,9 @@ button {
   width: 100%;
   text-align: left;
 }
+
+.field-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}

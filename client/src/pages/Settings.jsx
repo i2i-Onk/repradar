@@ -2,7 +2,13 @@ import { useState } from 'react';
 import FormField from '../components/FormField';
 import { EQUIPMENT, GOALS } from '../constants';
 import { useAuth } from '../hooks/useAuth';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { formatDistance } from '../utils/dates';
 import { toFieldErrors } from '../utils/formErrors';
+
+// Phone GPS is usually within ~20 m. Much worse than this (e.g. Wi-Fi only on a
+// laptop) could put the saved gym far enough off that check-ins fail.
+const ROUGH_ACCURACY_M = 100;
 
 // Builds the form's starting values from the saved user
 function formFromUser(user) {
@@ -17,6 +23,7 @@ function formFromUser(user) {
 
 export default function Settings() {
   const { user, updateProfile } = useAuth();
+  const { locating, requestLocation } = useGeolocation();
   const [form, setForm] = useState(() => formFromUser(user));
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -33,22 +40,25 @@ export default function Settings() {
     setForm({ ...form, equipment });
   }
 
-  // Location is read only when the user clicks this button, never in the background
-  function fillCurrentLocation() {
-    if (!navigator.geolocation) {
-      setMessage({ type: 'error', text: 'Your browser does not support location.' });
-      return;
+  // Location is read only when the user presses this button, never in the background.
+  // It saves the gym location straight away, so the user doesn't also need "Save settings".
+  async function saveCurrentLocationAsGym() {
+    setMessage({ type: '', text: '' });
+    setFieldErrors({});
+    try {
+      const { lat, lng, accuracy } = await requestLocation();
+      await updateProfile({ gymLocation: { lat, lng } });
+      setForm((current) => ({ ...current, lat: lat.toFixed(6), lng: lng.toFixed(6) }));
+      const rough = accuracy > ROUGH_ACCURACY_M;
+      setMessage({
+        type: rough ? 'error' : 'success',
+        text: rough
+          ? `Gym location saved, but it's only accurate to about ${formatDistance(accuracy)}. For reliable check-ins, try again inside the gym with location services on.`
+          : `Gym location saved (accurate to about ${formatDistance(accuracy)}).`,
+      });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message });
     }
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setForm((current) => ({
-          ...current,
-          lat: coords.latitude.toFixed(6),
-          lng: coords.longitude.toFixed(6),
-        }));
-      },
-      () => setMessage({ type: 'error', text: 'Could not get your location.' }),
-    );
   }
 
   async function handleSubmit(event) {
@@ -134,6 +144,13 @@ export default function Settings() {
 
         <fieldset className="field">
           <legend>Gym location (used to verify check-ins)</legend>
+          <p className="field-hint">
+            Easiest: stand in your gym and press the button. Your location is read once, only when
+            you press it.
+          </p>
+          <button type="button" onClick={saveCurrentLocationAsGym} disabled={locating}>
+            {locating ? 'Finding your location...' : 'Use my current location'}
+          </button>
           <FormField
             label="Latitude"
             name="lat"
@@ -152,9 +169,6 @@ export default function Settings() {
             onChange={handleChange}
             error={fieldErrors['gymLocation.lng']}
           />
-          <button type="button" onClick={fillCurrentLocation}>
-            Use my current location
-          </button>
         </fieldset>
 
         <button type="submit" disabled={saving}>

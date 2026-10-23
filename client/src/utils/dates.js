@@ -26,3 +26,13 @@ export function formatWorkoutDate(isoString) {
     year: 'numeric',
   });
 }
+
+// The browser's IANA time zone, e.g. "America/Vancouver"
+export function currentTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+// Metres → "42 m" or "1.2 km"
+export function formatDistance(metres) {
+  return metres < 1000 ? `${Math.round(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
+}
