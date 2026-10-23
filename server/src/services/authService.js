@@ -18,7 +18,17 @@ async function signup({ name, email, password, goal, equipment }) {
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const user = await User.create({ name, email, passwordHash, goal, equipment });
+  let user;
+  try {
+    user = await User.create({ name, email, passwordHash, goal, equipment });
+  } catch (error) {
+    // Two signups with the same email at the same moment can both pass the
+    // check above; the database's unique index stops the second one.
+    if (error.code === 11000) {
+      throw new AppError(409, 'An account with this email already exists');
+    }
+    throw error;
+  }
 
   return { user, token: createToken(user.id) };
 }
