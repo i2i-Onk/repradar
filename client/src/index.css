@@ -312,6 +312,59 @@ button {
   color: #555;
 }
 
+/* Progress charts */
+.chart-card {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chart-card h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.chart {
+  margin: 0;
+  width: 100%;
+}
+
+.chart-empty {
+  margin: 0;
+  padding: 1rem;
+  background: #f6f6f6;
+  border-radius: 4px;
+}
+
+.chart-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-table {
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.chart-table th,
+.chart-table td {
+  text-align: left;
+  padding: 0.25rem 1rem 0.25rem 0;
+  border-bottom: 1px solid #eee;
+}
+
 /* Check-in */
 .checkin-stats {
   display: flex;

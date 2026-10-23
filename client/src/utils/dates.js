@@ -36,3 +36,17 @@ export function currentTimeZone() {
 export function formatDistance(metres) {
   return metres < 1000 ? `${Math.round(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
 }
+
+// "YYYY-MM-DD" calendar day → e.g. "Oct 19" (read as a local day, so it can't shift)
+export function formatShortDay(day) {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(year, month - 1, date).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+// ISO timestamp → e.g. "Oct 19"
+export function formatShortDate(isoString) {
+  return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
