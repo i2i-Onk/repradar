@@ -1,6 +1,7 @@
 // One-time import of exercises from the free wger API (https://wger.de).
 //
-//   npm run seed:exercises            dry run: fetch and map, print a summary, write nothing
+//   npm run seed:exercises            dry run: report what would be inserted, updated
+//                                     or unchanged in the MONGO_URI database; saves nothing
 //   npm run seed:exercises -- --write save to the database in MONGO_URI
 //
 // Safe to run more than once: exercises are matched by their wger id, so a
@@ -10,7 +11,7 @@
 const mongoose = require('mongoose');
 const connectDB = require('../src/config/db');
 const { mapWgerExercise } = require('../src/utils/wgerMapping');
-const { upsertExercises } = require('../src/services/exerciseService');
+const { previewUpsertExercises, upsertExercises } = require('../src/services/exerciseService');
 
 const WGER_URL = 'https://wger.de/api/v2/exerciseinfo/?format=json&limit=200';
 
@@ -67,13 +68,18 @@ async function main() {
   console.log('By muscle group:', countBy(exercises, 'muscleGroups'));
   console.log('By equipment:', countBy(exercises, 'equipment'));
 
+  await connectDB();
+  const database = mongoose.connection.name;
+
   if (!write) {
-    console.log('\nDry run: nothing was saved. Add --write to save to the database.');
+    // Reads only: compares with what's saved, writes nothing
+    const preview = await previewUpsertExercises(exercises);
+    console.log(`\nDry run against database "${database}". Would do:`, preview);
+    console.log('Nothing was saved. Add --write to save.');
     return;
   }
 
-  await connectDB();
-  console.log(`Writing to database "${mongoose.connection.name}"...`);
+  console.log(`\nWriting to database "${database}"...`);
   const result = await upsertExercises(exercises);
   console.log('Done:', result);
 }

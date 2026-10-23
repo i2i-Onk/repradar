@@ -1,3 +1,4 @@
+const { isDeepStrictEqual } = require('node:util');
 const Exercise = require('../models/Exercise');
 
 const DEFAULT_LIMIT = 50;
@@ -52,4 +53,29 @@ async function upsertExercises(exercises) {
   };
 }
 
-module.exports = { listExercises, upsertExercises };
+// Dry run of upsertExercises: reports what it would insert, update or leave
+// unchanged, without writing anything. An exercise counts as "updated" if any
+// field upsertExercises would $set differs from what's saved, which is the
+// same rule MongoDB uses for its modified count.
+async function previewUpsertExercises(exercises) {
+  const ids = exercises.map((exercise) => exercise.wgerId);
+  const existing = await Exercise.find({ wgerId: { $in: ids } }).lean();
+  const savedById = new Map(existing.map((doc) => [doc.wgerId, doc]));
+
+  const result = { inserted: 0, updated: 0, unchanged: 0 };
+  for (const exercise of exercises) {
+    const saved = savedById.get(exercise.wgerId);
+    if (!saved) {
+      result.inserted += 1;
+    } else if (
+      Object.keys(exercise).some((field) => !isDeepStrictEqual(saved[field], exercise[field]))
+    ) {
+      result.updated += 1;
+    } else {
+      result.unchanged += 1;
+    }
+  }
+  return result;
+}
+
+module.exports = { listExercises, previewUpsertExercises, upsertExercises };
