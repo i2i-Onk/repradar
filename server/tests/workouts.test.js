@@ -110,6 +110,25 @@ describe('POST /api/workouts', () => {
     );
   });
 
+  it('reports a blank reps value (what the form sends) on that exact set', async () => {
+    const res = await as(alice).create(
+      validWorkout({
+        entries: [
+          {
+            exercise: benchPress.id,
+            sets: [
+              { reps: 8, weight: 60 },
+              { reps: '', weight: 60 },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(fieldsOf(res)).toEqual(['entries[0].sets[1].reps']);
+  });
+
   it('rejects a workout with no exercises', async () => {
     const res = await as(alice).create(validWorkout({ entries: [] }));
 
