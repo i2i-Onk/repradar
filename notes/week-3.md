@@ -162,3 +162,17 @@
 - Pure functions make the core rules testable without a database or a browser.
 - Passing unit tests don't prove the output is *good*: try it on real data.
 - An existing test can catch a fix that goes too far.
+
+**Debugging: "I don't see the recovery data"**
+- **Symptom:** after building the dashboard, the page didn't show the recovery tiles.
+- **Hypotheses:** (1) looking at the live site, which doesn't have the new code yet;
+  (2) an old browser tab from before switching branches; (3) a dev server started
+  on another branch.
+- **Tests:** confirmed the branch was `feature/recovery-dashboard`; the local API
+  answered `/api/dashboard` with 401 (route exists) while the live API gave 404
+  (not deployed yet). Loaded the page in headless Chrome against the test database:
+  tiles, legend and suggestions all rendered. So the code was fine.
+- **Fix:** it was hypothesis 2, a stale tab. A hard refresh (Ctrl+Shift+R) showed
+  the dashboard.
+- **Lesson:** before debugging code, check *which* version is running: branch,
+  server, and the tab itself.
