@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router';
 import GuestRoute from './components/GuestRoute';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import CheckIn from './pages/CheckIn';
 import Dashboard from './pages/Dashboard';
 import EditWorkout from './pages/EditWorkout';
 import Exercises from './pages/Exercises';
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/workouts" element={<WorkoutHistory />} />
           <Route path="/workouts/new" element={<LogWorkout />} />
           <Route path="/workouts/:id/edit" element={<EditWorkout />} />
+          <Route path="/checkin" element={<CheckIn />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
