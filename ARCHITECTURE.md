@@ -60,6 +60,27 @@ from the client.
 The response is `{ exercises, total }`, sorted by name, at most 50 by default.
 Exercises are a shared library, so there's no per-user filter here.
 
+**Example — logging a workout (`POST /api/workouts`):**
+`workoutRoutes` (`router.use(requireAuth)` protects every workout route) →
+`createWorkoutRules` in `validators/workoutValidators.js` (at least one exercise,
+each with 1–20 sets; reps 1–1000; weight 0–1000 kg; date not in the future) →
+`workoutController.create` → `workoutService.createWorkout` (checks every exercise
+id is in the library, copies only `exercise`, `reps` and `weight`) → Workout model.
+The response fills in each exercise's name, muscle groups and equipment (`populate`).
+
+**Keeping workouts private:** every workout query in `workoutService` includes
+`user: req.userId`, e.g. `Workout.findOne({ _id: id, user: userId })`. Asking for,
+editing or deleting someone else's workout gets the same 404 as a workout that
+doesn't exist, so the API never confirms that another user's workout id is real.
+
+| Method and URL | Does |
+| --- | --- |
+| `GET /api/workouts` | Your workouts, newest first (50 by default, `?limit=` up to 100) |
+| `POST /api/workouts` | Log a workout → 201 |
+| `GET /api/workouts/:id` | One of your workouts |
+| `PUT /api/workouts/:id` | Replace its date and exercises |
+| `DELETE /api/workouts/:id` | Delete it → 204 |
+
 ## Exercise library and the seed script
 
 The exercises come from the free [wger](https://wger.de) API, imported once by
@@ -83,18 +104,22 @@ share one database, it's built to be safe to run again: a second run reports
 
 - `main.jsx` — starts the app: `BrowserRouter` → `AuthProvider` → `App`
 - `App.jsx` — the list of every page (route) and who may see it
-- `pages/` — full screens: `Login`, `Signup`, `Dashboard`, `Exercises`, `Settings`, `NotFound`
+- `pages/` — full screens: `Login`, `Signup`, `Dashboard`, `Exercises`, `LogWorkout`,
+  `WorkoutHistory`, `EditWorkout`, `Settings`, `NotFound`
 - `components/` — reusable pieces:
   - `ProtectedRoute` — only lets logged-in users through, otherwise sends them to `/login`
   - `GuestRoute` — the opposite, for login and signup
   - `Layout` + `Navbar` — the navbar (with logout) shown on every logged-in page
   - `FormField` — a label, input and error message
+  - `WorkoutForm` — the exercises-and-sets form, shared by `LogWorkout` and `EditWorkout`
+  - `ExercisePicker` — searches the exercise library and adds the chosen exercise
 - `services/` — the only place that talks to the API. `api.js` has the shared
   `apiRequest` helper; there is one file per resource (`authService`, `userService`,
-  `exerciseService`).
+  `exerciseService`, `workoutService`).
 - `context/` + `hooks/useAuth.js` — shared login state (see below)
 - `hooks/useDebouncedValue.js` — waits until the user stops typing before searching
 - `utils/formErrors.js` — turns the API's validation errors into one message per field
+- `utils/dates.js` — converts between date inputs and stored dates (see Key decisions)
 - `constants.js` — goal, equipment and muscle group options; must match
   `server/src/config/constants.js`
 
@@ -114,6 +139,12 @@ On success, `AuthProvider` stores the updated user, so every page sees the chang
 calls `exerciseService.listExercises()` → `apiRequest` → `GET /api/exercises`.
 If the filters change before an answer arrives, that older answer is ignored, so
 a slow response can't overwrite newer results.
+
+**Example — logging a workout:** `LogWorkout` renders `WorkoutForm`, which keeps
+the inputs as text while you type. On save, it converts them to the API's shape
+(exercise ids, numbers, an empty weight as 0) and calls `createWorkout()` from
+`workoutService` → `POST /api/workouts`. Validation errors come back with paths
+like `entries[0].sets[1].reps`, so each message appears under the exact set.
 
 ### How login state works
 
@@ -147,6 +178,15 @@ bounce a logged-in user to the login screen.
   wins (barbell > dumbbell > kettlebell > cable > band > bodyweight); benches are ignored.
 - **Search text is escaped** before it's used in a database regex, so typing `(`
   can't cause an error or a very slow query.
+- **Another user's workout returns 404, not 403**, so the API doesn't confirm
+  that a workout id belongs to someone.
+- **Editing replaces the whole workout (`PUT`)** rather than patching parts of it,
+  because the edit form always sends every exercise and set.
+- **Weights are in kilograms**, and an empty weight is saved as 0 (bodyweight).
+- **Workout dates are saved at 12:00 local time** on the chosen day. A date input
+  gives `YYYY-MM-DD`, and treating that as midnight UTC would show the previous day
+  in North America. Noon stays on the same day in the time zones users are likely
+  to be in. Dates more than a day in the future are rejected.
 - **Express 5 and `req.query`:** express-validator's clean-ups (like turning
   `"20"` into `20`) don't stick to `req.query` in Express 5, so controllers read
   validated query values with `matchedData(req)`.
