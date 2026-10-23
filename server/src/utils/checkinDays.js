@@ -72,11 +72,25 @@ function weeklyProgress(dates, today, goal) {
   return { weekStart, weekEnd, count, goal, remaining: Math.max(0, goal - count) };
 }
 
+// Check-in days per week for the last `weeks` weeks (this week included),
+// oldest first: [{ weekStart, count }]. Used by the progress bar chart.
+function weeklyCounts(dates, today, weeks) {
+  const uniqueDates = [...new Set(dates)];
+  const thisWeek = startOfWeek(today);
+  return Array.from({ length: weeks }, (_, i) => {
+    const weekStart = addDays(thisWeek, -7 * (weeks - 1 - i));
+    const weekEnd = addDays(weekStart, 6);
+    const count = uniqueDates.filter((date) => date >= weekStart && date <= weekEnd).length;
+    return { weekStart, count };
+  });
+}
+
 module.exports = {
   addDays,
   calculateStreak,
   isValidTimeZone,
   localDateIn,
   startOfWeek,
+  weeklyCounts,
   weeklyProgress,
 };
