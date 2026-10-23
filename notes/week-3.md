@@ -207,3 +207,35 @@
 - Store the user's local date at the moment it happens; don't recompute "days" later.
 - To prove a safety net works, switch off the other safety net and test again.
 - Look at the page, not just the test output: layout bugs don't fail tests.
+
+## Fri Oct 23 (late afternoon): progress charts
+- **Built step 7** on `feature/progress-charts`. It's stacked on
+  `feature/gym-checkins` (not branched from `main`) because the check-in chart
+  needs the CheckIn model, which isn't in `main` until that PR merges.
+- Three endpoints (`/api/progress/...`) and pure functions for the chart data
+  (test-first), plus a Progress page with Recharts: heaviest weight per session for
+  a chosen exercise, and verified check-ins per week with the goal line. 24 new
+  tests; 188 pass.
+- **Picked a Recharts version on purpose.** The registry showed a recent date for
+  3.10.1, so I checked the release history before installing: it was published in
+  July, and the recent date was a metadata update. Installed 3.10.1; no known
+  vulnerabilities in production dependencies.
+- **Lazy-loaded the Progress page,** so the chart library (about 110 kB gzipped)
+  only downloads when someone opens it. The build output confirmed a separate chunk.
+- **Screenshots found four chart problems no test would:** (1) the weight axis
+  started at 0, which flattened 55 → 65 kg into an almost-straight line; (2) the
+  bar chart's count axis showed 0, 2, 4, 5; (3) week labels ran into each other on a
+  phone; (4) once the weight axis fitted the data, Recharts chose uneven ticks
+  (45, 52, 59, 66). Fixes: a fitted weight axis with even 5/10/25 kg steps, whole-
+  number ticks, letting Recharts skip labels when space is tight, and the goal
+  label moved into the margin so bars can't cover it.
+- **Honest time:** sessions were evenly spaced whatever the gap between them, and the
+  curved line suggested weights between sessions. Switched to a real time axis and
+  straight segments; a test session 4 weeks earlier now shows as a visible gap.
+- **Checked the hover tooltips** by simulating the mouse in headless Chrome:
+  "Week of Oct 19 / 2 of 3 check-ins" and "Thu, Oct 22, 2026 / 65 kg × 5".
+
+**Key learnings**
+- Line charts show change, so they don't have to start at 0; bar charts do.
+- An evenly spaced category axis quietly misrepresents irregular dates.
+- Check a dependency's actual publish date and audit it before installing.
