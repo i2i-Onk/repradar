@@ -2,4 +2,17 @@ const GOALS = ['strength', 'hypertrophy', 'general'];
 
 const EQUIPMENT = ['bodyweight', 'dumbbell', 'barbell', 'kettlebell', 'machine', 'cable', 'band'];
 
-module.exports = { GOALS, EQUIPMENT };
+const MUSCLE_GROUPS = [
+  'chest',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'calves',
+  'core',
+];
+
+module.exports = { GOALS, EQUIPMENT, MUSCLE_GROUPS };

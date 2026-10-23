@@ -60,4 +60,48 @@
 **Key learnings**
 - Route guards that wait for `'loading'` stop logged-in users being bounced to login on refresh.
 - Only copying named fields in the service stops users changing fields they shouldn't (like email).
-- Many failures at once usually share one cause (again). 
+- Many failures at once usually share one cause (again).
+
+## Fri Oct 23
+- Auth frontend PR (#3) merged; frontend live on Vercel.
+- **Built the exercise library** on `feature/exercise-library`: Exercise model,
+  wger → RepRadar mapping (pure function, 11 unit tests), a seed script, and
+  `GET /api/exercises` with search, muscle and equipment filters (11 API tests),
+  plus an Exercises page with debounced search and filters. 43 server tests pass.
+- **wger vs curated JSON.** Checked wger's muscle and equipment lists first
+  (15 and 12 items), which made it clear a lookup table would work, so I used wger.
+  A dry run over all 932 exercises mapped 670, with no duplicate names.
+- **149 exercises skipped for equipment.** Looked at why before changing any rule:
+  128 have an empty equipment list, and they mix machines (Seated Hip Adduction,
+  Leg Extension) with bodyweight moves (Deadbug, Glute Bridge). Defaulting them
+  to bodyweight would make recommendations suggest machines to people without
+  them, so I kept skipping them.
+- **Seed re-run said "updated: 2" for identical data.** Symptom: the "run twice,
+  no duplicates" test failed because the second run reported every exercise as
+  updated instead of unchanged. Hypothesis: Mongoose's `timestamps` adds a fresh
+  `updatedAt` to every update, so the document always changes. Test: turned
+  timestamps off for the seed's updates and set the dates only on first insert.
+  The test passed, and re-running the real seed against the test database gave
+  `inserted: 0, updated: 0, unchanged: 670`.
+- **A test failed only after a manual check.** Symptom: "lists all exercises"
+  expected 5 but got 675, and passed when re-run. Hypothesis: my manual check had
+  seeded 670 exercises into the test database, and tests only cleared data *after*
+  each test, so the first test saw leftovers. Test: seeded the test database again
+  on purpose and ran the tests: same failure, reproduced. Fix: `connectTestDB`
+  now clears the database right after connecting.
+- **Dry run now checks the real database.** It connects, prints the database name,
+  and reports would-be inserts, updates and unchanged without saving. A test checks
+  the preview gives the same numbers as the real run that follows it. Against the
+  test database: dry run said 670 inserts with 0 saved; after `--write`, the dry
+  run said 670 unchanged.
+- **Credited wger in the README.** Checked the API instead of guessing the licence:
+  each exercise has its own (565 CC BY-SA 4.0, 89 CC BY-SA 3.0, 16 CC0).
+- **Express 5 `req.query`:** express-validator's `.toInt()` didn't change
+  `req.query.limit` (still a string). Confirmed with a tiny test app; used
+  `matchedData(req)` in the controller instead.
+
+**Key learnings**
+- A test that fails only because a file is missing doesn't prove much. Fail it against a stub first.
+- "Passes on re-run" isn't a fix: reproduce the failure on purpose to prove the cause.
+- An upsert keyed on a stable outside id (`wgerId`) makes a seed safe to run again.
+- Look at what's being skipped before loosening a rule; the safe default can be "skip". 
