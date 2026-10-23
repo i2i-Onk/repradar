@@ -3,6 +3,7 @@ import GuestRoute from './components/GuestRoute';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
+import Exercises from './pages/Exercises';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
@@ -20,6 +21,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/exercises" element={<Exercises />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
