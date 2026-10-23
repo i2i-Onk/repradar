@@ -81,6 +81,35 @@ doesn't exist, so the API never confirms that another user's workout id is real.
 | `PUT /api/workouts/:id` | Replace its date and exercises |
 | `DELETE /api/workouts/:id` | Delete it → 204 |
 
+## Rate limiting (login and signup)
+
+`middleware/rateLimiters.js` (using `express-rate-limit`) runs **first** on the two
+public auth routes, before validation, so blocked requests never reach the database:
+
+`authRoutes` → `loginLimiter` / `signupLimiter` → validators → controller → ...
+
+| Route | Limit per IP address | Notes |
+| --- | --- | --- |
+| `POST /api/auth/login` | 10 **failed** attempts per 15 minutes | Successful logins don't count, so normal users never hit it |
+| `POST /api/auth/signup` | 20 accounts per hour | Generous, because a class on one school Wi-Fi shares one IP |
+
+A blocked request gets **429** with the usual `{ message }` and a `Retry-After`
+header; the Login and Signup pages already show such messages above the form. The
+limits live in `config/rateLimits.js`; optional `LOGIN_RATE_LIMIT_MAX` and
+`SIGNUP_RATE_LIMIT_MAX` change them (the tests use this).
+
+**Proxies and `TRUST_PROXY`:** on Render, requests arrive through Render's proxy, so
+without help every user would look like the same IP and share one limit.
+`app.set('trust proxy', N)` tells Express how many proxies to skip to find the real
+visitor's address. Set `TRUST_PROXY=1` on Render (default 0 locally). Too high a
+number would let anyone fake their IP with an `X-Forwarded-For` header and dodge
+the limit. Each block is logged with its IP, so Render's logs show whether the
+setting is right (real visitor addresses, not the same one every time).
+
+The counts are kept in the server's memory: they reset when the server restarts,
+and wouldn't be shared if there were several servers. Fine for one Render instance;
+a shared store (e.g. Redis) would be the next step.
+
 ## Recovery and recommendations (the core logic)
 
 The rules that make RepRadar useful live in `server/src/utils/` as **pure
