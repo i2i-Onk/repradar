@@ -15,40 +15,40 @@
   path from `../`, and found the file was missing. Learned that Windows ignores
   filename case but Linux (Render, CI) doesn't.
 - **npm audit:** 19 moderate vulnerabilities, all in dev tools. Checked production
-  dependencies with `npm audit --omit=dev`. Avoided `npm audit fix --force`
-  because it can install breaking major versions.
+dependencies with `npm audit --omit=dev`. Avoided `npm audit fix --force`
+because it can install breaking major versions.
 - **Test database switch.** All 9 database tests failed. Found the *first* error
-  (`Missing required sub-document 'driver'`, a handshake mismatch between the
-  MongoDB driver and the in-memory server version). The `buffering timed out`
-  errors were knock-on effects: Mongoose queues queries while waiting for a
-  connection that never came. Pinning the server version didn't fix it, so
-  switched to a separate `repradar-test` database on Atlas, with a safety check
-  so tests can never wipe real data. Tests run one file at a time (`--runInBand`)
-  because they share one database.
+(`Missing required sub-document 'driver'`, a handshake mismatch between the
+MongoDB driver and the in-memory server version). The `buffering timed out`
+errors were knock-on effects: Mongoose queues queries while waiting for a
+connection that never came. Pinning the server version didn't fix it, so
+switched to a separate `repradar-test` database on Atlas, with a safety check
+so tests can never wipe real data. Tests run one file at a time (`--runInBand`)
+because they share one database.
 - **Least privilege:** tests currently use the same database user as the app. A
-  stricter setup would use a test-only user that can only access `repradar-test`,
-  since that connection string is stored as a GitHub secret. Noted as a future improvement.
+stricter setup would use a test-only user that can only access `repradar-test`,
+since that connection string is stored as a GitHub secret. Noted as a future improvement.
 - **Key lesson:** when many things fail at once, find the first error. The rest
-  are often symptoms of it.
+are often symptoms of it.
 - CORS error in the browser even though curl worked. CORS is enforced by browsers, not servers, which is why curl was unaffected. A request with an Authorization header triggers a preflight OPTIONS request, and the API must answer it with Access-Control-Allow-Origin. Diagnosed by sending a fake preflight with curl -i -X OPTIONS. Access-Control-Allow-Headers was present but Allow-Origin wasn’t, which meant CORS was running but rejecting the origin. Logged the allowed-origins list, then made the parsing defensive (trim spaces, quotes, trailing slashes and hidden Windows line endings). Also confirmed middleware order: CORS must come before routes and the 404 handler.
 
 ## Wed Oct 21
 - **Built the auth frontend** on `feature/auth-frontend`: React Router routes,
-  `ProtectedRoute` and `GuestRoute` guards, Login and Signup pages with errors shown
-  next to each field, a navbar with logout, and a Settings page for goal, equipment,
-  weekly goal and gym location.
+`ProtectedRoute` and `GuestRoute` guards, Login and Signup pages with errors shown
+next to each field, a navbar with logout, and a Settings page for goal, equipment,
+weekly goal and gym location.
 - **Added `PATCH /api/users/me`** with 7 new tests (success, only-sent-fields change,
-  email can't be changed, 400, 401, 404, another user's data untouched). 17 server tests pass.
+email can't be changed, 400, 401, 404, another user's data untouched). 17 server tests pass.
 - **A test passed before the feature existed.** Wrote the PATCH tests first and ran
-  them: 6 failed as expected, but the 404 test passed. Suspected it was passing for the
-  wrong reason. With no PATCH route yet, the request fell through to the app's
-  "Route not found" handler, which also returns 404. It only became a real test once
-  the route existed. Lesson: when watching tests fail first, check *why* each one
-  fails or passes, not just the count.
+them: 6 failed as expected, but the 404 test passed. Suspected it was passing for the
+wrong reason. With no PATCH route yet, the request fell through to the app's
+"Route not found" handler, which also returns 404. It only became a real test once
+the route existed. Lesson: when watching tests fail first, check *why* each one
+fails or passes, not just the count.
 - **Prettier flagged 19 files I hadn't touched.** `prettier --check` reported style
-  issues in almost every server file. So many files at once suggested a global cause
-  rather than real style problems. Ran `file src/app.js`: "with CRLF line terminators".
-  `git config core.autocrlf` is `true`, so Git checks files out with Windows line
+issues in almost every server file. So many files at once suggested a global cause
+rather than real style problems. Ran `file src/app.js`: "with CRLF line terminators".
+`git config core.autocrlf` is `true`, so Git checks files out with Windows line
   endings but stores them with LF; Prettier expects LF. Formatted only my new files,
   then added `"endOfLine": "auto"` to `.prettierrc`. Re-running the check showed my
   hypothesis was only partly right: 13 files still failed. Diffing them showed real
@@ -177,16 +177,65 @@
 - **Lesson:** before debugging code, check *which* version is running: branch,
   server, and the tab itself.
 
-**Debugging: signup race condition (`fix/signup-race-condition`)**
-- **Symptom:** two signups with the same email at almost the same moment (e.g. a
-  double-click) could give the second one a 500 instead of a friendly 409.
-- **Hypothesis:** both requests pass the "does this email exist?" check before
-  either saves; the unique index on `email` then rejects the second with a
-  duplicate key error, which the error handler treats as unexpected (500).
-- **Test:** wrote a test that sends two identical signups at once. It failed about
-  half the time (a race: it depends on which request finishes hashing first), and
-  a failing run showed `[201, 500]` with `E11000 duplicate key ... email_1` in the log.
-- **Fix:** catch error code 11000 around `User.create` and turn it into the same
-  409 message as the normal duplicate check. The test then passed 10 of 10 runs.
-- **Lesson:** a check-then-save is never enough on its own; the database's unique
-  index is the real guarantee, so handle its error too. Same pattern as check-ins.
+## Fri Oct 23 (afternoon): gym check-ins
+- Recovery dashboard PR (#6) merged.
+- **Built step 6** on `feature/gym-checkins`, working autonomously with Claude Code:
+  CheckIn model, `POST /api/checkins` (verified within `CHECKIN_RADIUS_M`, default
+  150 m; one verified check-in per day), `GET /api/checkins/summary`, pure functions
+  for streaks and weekly progress (test-first), a `useGeolocation` hook, a Check-in
+  page, and a one-tap "Use my current location" in Settings. 46 new tests; 164 pass.
+- **Time zone decision:** the browser sends its time zone; each check-in stores the
+  local calendar date it happened on. Streaks and weeks are calendar maths on those
+  dates, so daylight saving can't shift a day. Tested with Kiritimati (UTC+14) and
+  Pago Pago (UTC−11), which are always on different dates.
+- **Proving the database rule, not just the test.** The "two check-ins at the same
+  moment" test passed, but the service also looks for an existing check-in first, so
+  the test alone didn't show the unique index works. Temporarily switched the lookup
+  off (on a backup copy) and ran the tests: still only one counted, so the index
+  does the job by itself. Restored the file and checked it was byte-for-byte the same.
+- **Testing location in a real browser.** Headless Chrome can fake a position and
+  grant or deny the location permission. Ran three scenarios against the test
+  database: checking in 56 m away (verified, streak 0 → 1), Settings with permission
+  denied (friendly "blocked" message), and saving a new gym location (saved, and the
+  API confirmed it).
+- **Bugs the screenshots caught:** (1) the navbar ran off the screen on phones once
+  the sixth link was added: links now wrap; (2) two success messages showed at once
+  after checking in; (3) my first fix for that brought back the Check in button,
+  inviting a pointless second tap. Now: no button once you've checked in today.
+
+**Key learnings**
+- Store the user's local date at the moment it happens; don't recompute "days" later.
+- To prove a safety net works, switch off the other safety net and test again.
+- Look at the page, not just the test output: layout bugs don't fail tests.
+
+## Fri Oct 23 (late afternoon): progress charts
+- **Built step 7** on `feature/progress-charts`. It's stacked on
+  `feature/gym-checkins` (not branched from `main`) because the check-in chart
+  needs the CheckIn model, which isn't in `main` until that PR merges.
+- Three endpoints (`/api/progress/...`) and pure functions for the chart data
+  (test-first), plus a Progress page with Recharts: heaviest weight per session for
+  a chosen exercise, and verified check-ins per week with the goal line. 24 new
+  tests; 188 pass.
+- **Picked a Recharts version on purpose.** The registry showed a recent date for
+  3.10.1, so I checked the release history before installing: it was published in
+  July, and the recent date was a metadata update. Installed 3.10.1; no known
+  vulnerabilities in production dependencies.
+- **Lazy-loaded the Progress page,** so the chart library (about 110 kB gzipped)
+  only downloads when someone opens it. The build output confirmed a separate chunk.
+- **Screenshots found four chart problems no test would:** (1) the weight axis
+  started at 0, which flattened 55 → 65 kg into an almost-straight line; (2) the
+  bar chart's count axis showed 0, 2, 4, 5; (3) week labels ran into each other on a
+  phone; (4) once the weight axis fitted the data, Recharts chose uneven ticks
+  (45, 52, 59, 66). Fixes: a fitted weight axis with even 5/10/25 kg steps, whole-
+  number ticks, letting Recharts skip labels when space is tight, and the goal
+  label moved into the margin so bars can't cover it.
+- **Honest time:** sessions were evenly spaced whatever the gap between them, and the
+  curved line suggested weights between sessions. Switched to a real time axis and
+  straight segments; a test session 4 weeks earlier now shows as a visible gap.
+- **Checked the hover tooltips** by simulating the mouse in headless Chrome:
+  "Week of Oct 19 / 2 of 3 check-ins" and "Thu, Oct 22, 2026 / 65 kg × 5".
+
+**Key learnings**
+- Line charts show change, so they don't have to start at 0; bar charts do.
+- An evenly spaced category axis quietly misrepresents irregular dates.
+- Check a dependency's actual publish date and audit it before installing.

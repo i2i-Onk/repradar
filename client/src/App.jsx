@@ -1,7 +1,9 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import GuestRoute from './components/GuestRoute';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import CheckIn from './pages/CheckIn';
 import Dashboard from './pages/Dashboard';
 import EditWorkout from './pages/EditWorkout';
 import Exercises from './pages/Exercises';
@@ -11,6 +13,10 @@ import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import Signup from './pages/Signup';
 import WorkoutHistory from './pages/WorkoutHistory';
+
+// Loaded only when someone opens Progress, so the chart library (Recharts)
+// doesn't slow down the first page load for everyone
+const Progress = lazy(() => import('./pages/Progress'));
 
 // Every page in the app and who is allowed to see it
 export default function App() {
@@ -28,6 +34,15 @@ export default function App() {
           <Route path="/workouts" element={<WorkoutHistory />} />
           <Route path="/workouts/new" element={<LogWorkout />} />
           <Route path="/workouts/:id/edit" element={<EditWorkout />} />
+          <Route path="/checkin" element={<CheckIn />} />
+          <Route
+            path="/progress"
+            element={
+              <Suspense fallback={<p className="page">Loading...</p>}>
+                <Progress />
+              </Suspense>
+            }
+          />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

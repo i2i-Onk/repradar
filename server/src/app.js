@@ -6,6 +6,8 @@ const userRoutes = require('./routes/userRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const checkinRoutes = require('./routes/checkinRoutes');
+const progressRoutes = require('./routes/progressRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -37,6 +39,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/checkins', checkinRoutes);
+app.use('/api/progress', progressRoutes);
 
 // Any request that didn't match a route above
 app.use((req, res) => {
