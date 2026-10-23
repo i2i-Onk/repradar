@@ -1,11 +1,25 @@
 const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
 const authRoutes = require('./routes/authRoutes');
-const errorHandler = require('./middleware/errorHandler');
 const userRoutes = require('./routes/userRoutes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-app.use('/api/users', userRoutes);
 
+// Security headers (protects against common browser-based attacks)
+app.use(helmet());
+
+// Only allow requests from our own frontend(s). CLIENT_ORIGIN can hold
+// several comma-separated URLs, e.g. local dev and the Vercel site.
+// Clean each origin so stray spaces, quotes, Windows line endings or a
+// trailing slash in CLIENT_ORIGIN can't cause a silent mismatch.
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim().replace(/^["']|["']$/g, '').replace(/\/$/, ''));
+
+
+app.use(cors({ origin: allowedOrigins }));
 
 // Parse incoming JSON request bodies so they're available as req.body
 app.use(express.json());
@@ -16,6 +30,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Any request that didn't match a route above
 app.use((req, res) => {
