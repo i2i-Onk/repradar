@@ -14,6 +14,9 @@ async function connectTestDB() {
   }
 
   await mongoose.connect(uri);
+
+  // Start empty even if an earlier run (or a manual check) left data behind
+  await clearTestDB();
 }
 
 // Empty every collection so each test starts from a clean slate
