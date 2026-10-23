@@ -89,6 +89,13 @@
   each test, so the first test saw leftovers. Test: seeded the test database again
   on purpose and ran the tests: same failure, reproduced. Fix: `connectTestDB`
   now clears the database right after connecting.
+- **Dry run now checks the real database.** It connects, prints the database name,
+  and reports would-be inserts, updates and unchanged without saving. A test checks
+  the preview gives the same numbers as the real run that follows it. Against the
+  test database: dry run said 670 inserts with 0 saved; after `--write`, the dry
+  run said 670 unchanged.
+- **Credited wger in the README.** Checked the API instead of guessing the licence:
+  each exercise has its own (565 CC BY-SA 4.0, 89 CC BY-SA 3.0, 16 CC0).
 - **Express 5 `req.query`:** express-validator's `.toInt()` didn't change
   `req.query.limit` (still a string). Confirmed with a tiny test app; used
   `matchedData(req)` in the controller instead.

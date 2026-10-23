@@ -72,9 +72,10 @@ The exercises come from the free [wger](https://wger.de) API, imported once by
 3. **`exerciseService.upsertExercises`** saves them. Each exercise is matched by
    its `wgerId`: updated if it's already there, inserted if not. Nothing is deleted.
 
-**Running it:** `npm run seed:exercises` is a dry run that prints a summary and
-saves nothing. `npm run seed:exercises -- --write` saves to the database in
-`MONGO_URI` and prints the database name first. Because local and production
+**Running it:** `npm run seed:exercises` is a dry run. It connects to the
+database in `MONGO_URI`, prints its name, and reports how many exercises would be
+inserted, updated or unchanged (`exerciseService.previewUpsertExercises`, which
+only reads). `npm run seed:exercises -- --write` does the same, then saves. Because local and production
 share one database, it's built to be safe to run again: a second run reports
 `{ inserted: 0, updated: 0, unchanged: 670 }`.
 
