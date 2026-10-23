@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Exercises from './pages/Exercises';
+import LogWorkout from './pages/LogWorkout';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
@@ -22,6 +23,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/exercises" element={<Exercises />} />
+          <Route path="/workouts/new" element={<LogWorkout />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
