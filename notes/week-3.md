@@ -253,3 +253,34 @@ rather than real style problems. Ran `file src/app.js`: "with CRLF line terminat
   409 message as the normal duplicate check. The test then passed 10 of 10 runs.
 - **Lesson:** a check-then-save is never enough on its own; the database's unique
   index is the real guarantee, so handle its error too. Same pattern as check-ins.
+
+## Fri Oct 23 (evening): rate limiting
+- All three PRs (#7 check-ins, #8 progress charts, #9 signup fix) merged. A notes
+  conflict resolved with "Accept Incoming" dropped the signup race story; restored
+  it from the original commit. Next time: "Accept Both" for notes.
+- **Built login and signup rate limiting** on `feature/rate-limiting`
+  (express-rate-limit 8.7.1): 10 failed logins per 15 minutes and 20 signups per
+  hour per IP, with a friendly 429. 6 new tests; 195 pass.
+- **The proxy problem.** On Render every request comes through Render's proxy, so
+  without configuration all users would share one IP and one limit. Added
+  `TRUST_PROXY` (set to 1 on Render). Trusting too many proxies would let anyone
+  fake their IP, so it's a number, not "trust everything". The tests use
+  `X-Forwarded-For` with `TRUST_PROXY=1` to give each test its own IP, which also
+  checks the setting works.
+- **Keeping the rest of the tests unthrottled:** the existing tests sign up hundreds
+  of users. Limits are configurable through optional env vars; `setupEnv.js` raises
+  them, and the rate-limit test file sets tiny ones (Jest loads the app separately
+  per test file).
+- **npm audit found a high-severity issue** in body-parser (which Express uses for
+  every request). It already existed before this branch. `npm audit fix` (not
+  `--force`) updated only the lockfile, 2.3.0 → 2.4.0; 0 vulnerabilities now.
+  The install also warned about blocked install scripts: both were internal Jest
+  packages, so I left them blocked.
+- **Caught an unwanted change:** Prettier reformatted my CORS code in `app.js`
+  while I was formatting the files I'd edited. Reverted that part so the commit only
+  contains the rate-limit change.
+
+**Key learnings**
+- Behind a proxy, `req.ip` is the proxy unless you tell Express how many to trust.
+- Read `npm audit` output before fixing: check what's affected and that it's not `--force`.
+- Review the diff before committing; formatters can change more than you meant.
