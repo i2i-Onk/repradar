@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "test": "jest --runInBand",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "seed:exercises": "node --env-file=.env scripts/seedExercises.js"
   },
   "keywords": [],
   "author": "",
