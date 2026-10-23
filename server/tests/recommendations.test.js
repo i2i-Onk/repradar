@@ -102,6 +102,42 @@ describe('recommendExercises', () => {
     expect(groups.map((g) => g.muscleGroup)).toEqual(['back']);
   });
 
+  it('skips near-duplicate exercises in the same group', () => {
+    // Real wger names: the first three are the same exercise
+    const curls = [
+      exercise('Alternating bicep curls', ['biceps'], 'dumbbell'),
+      exercise('Alternating Biceps Curls With Dumbbell', ['biceps'], 'dumbbell'),
+      exercise('Alternating Dumbbell Curl', ['biceps'], 'dumbbell'),
+      exercise('Hammer Curl', ['biceps'], 'dumbbell'),
+      exercise('Concentration Curl', ['biceps'], 'dumbbell'),
+    ];
+
+    const { groups } = recommend({
+      recovery: [row('biceps', null, 'neglected')],
+      exercises: curls,
+      equipment: ['dumbbell'],
+    });
+
+    expect(names(groups[0])).toEqual([
+      'Alternating bicep curls',
+      'Concentration Curl',
+      'Hammer Curl',
+    ]);
+  });
+
+  it('does not suggest stretches', () => {
+    const { groups } = recommend({
+      recovery: [row('chest', null, 'neglected')],
+      exercises: [
+        exercise('Doorway Pectoral Stretch', ['chest'], 'bodyweight'),
+        exercise('Chest stretch on wall', ['chest'], 'bodyweight'),
+        exercise('Push-up', ['chest', 'triceps'], 'bodyweight'),
+      ],
+    });
+
+    expect(names(groups[0])).toEqual(['Push-up']);
+  });
+
   it('suggests nothing when the user has no equipment selected', () => {
     expect(recommend({ equipment: [] }).groups).toEqual([]);
   });
