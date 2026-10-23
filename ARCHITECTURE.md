@@ -286,5 +286,4 @@ bounce a logged-in user to the login screen.
 - Each test file clears the database when it connects, so data left over from a
   crashed run or a manual check can't break the next run.
 - Pure functions in `utils/` (`wgerMapping`, `recovery`, `recommendations`, `distance`,
-  `checkinDays`) have
-  unit tests that need no database, written before the code.
+  `checkinDays`) have unit tests that need no database, written before the code.
