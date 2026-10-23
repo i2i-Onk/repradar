@@ -19,6 +19,7 @@ export default function Navbar() {
         <NavLink to="/workouts" end>
           History
         </NavLink>
+        <NavLink to="/checkin">Check in</NavLink>
         <NavLink to="/exercises">Exercises</NavLink>
         <NavLink to="/settings">Settings</NavLink>
       </nav>

@@ -114,6 +114,42 @@ equipment the user has), and calls `recommendExercises`. The response is
    words, e.g. "Alternating bicep curls" and "Alternating Biceps Curls With Dumbbell").
 6. No exercise is suggested for two groups. A group with nothing usable is skipped.
 
+## Gym check-ins
+
+**Example — checking in (`POST /api/checkins { lat, lng, timeZone }`):**
+`checkinRoutes` (`router.use(requireAuth)`) → `createCheckInRules` (coordinates in
+range, a real time zone) → `checkinController.create` → `checkinService.createCheckIn`:
+
+1. Load the user. No saved gym location → **400** "Save your gym location in Settings".
+2. `distanceInMetres` (Haversine, `utils/distance.js`) from the coordinates to the gym.
+3. **Verified** if the distance is within `CHECKIN_RADIUS_M` (optional env var,
+   default 150; read by `config/checkin.js`). The client never decides this.
+4. Work out the user's local date (`localDateIn`) and save the check-in, verified or not.
+5. Already a verified check-in that day → **409**. A unique index on
+   `{ user, localDate }` (only for verified check-ins) makes this a database rule,
+   so two taps at the same moment can't both count.
+6. Respond with the check-in, the radius and the updated streak and week.
+
+`GET /api/checkins/summary?timeZone=` returns `{ streak, week, todayCheckedIn,
+hasGymLocation, radius }` for the Check-in page.
+
+**Days and time zones:** the browser sends its IANA time zone (e.g.
+`America/Vancouver`). Each check-in stores the calendar date it happened on in that
+zone (`localDate`, `YYYY-MM-DD`). Streaks and weeks are then plain calendar maths on
+those dates (`utils/checkinDays.js`, pure and unit-tested), so daylight saving and
+server time zones can't move a check-in to the wrong day. A check-in keeps the day
+the user experienced, even if they travel later.
+
+- **Streak:** consecutive days with a verified check-in, ending today, or ending
+  yesterday if they haven't checked in yet today (the day isn't over).
+- **Week:** Monday to Sunday, counted against the user's `weeklyGoal`.
+
+**Location privacy:** `useGeolocation` (client) reads the position once, only when
+the user presses "Check in" or "Use my current location" in Settings. It asks for a
+fresh reading (`maximumAge: 0`) and turns each failure (permission blocked, no
+signal, timeout, unsupported browser, not https) into a plain-English message.
+Nothing watches or tracks location.
+
 ## Exercise library and the seed script
 
 The exercises come from the free [wger](https://wger.de) API, imported once by
@@ -138,7 +174,7 @@ share one database, it's built to be safe to run again: a second run reports
 - `main.jsx` — starts the app: `BrowserRouter` → `AuthProvider` → `App`
 - `App.jsx` — the list of every page (route) and who may see it
 - `pages/` — full screens: `Login`, `Signup`, `Dashboard`, `Exercises`, `LogWorkout`,
-  `WorkoutHistory`, `EditWorkout`, `Settings`, `NotFound`
+  `WorkoutHistory`, `EditWorkout`, `CheckIn`, `Settings`, `NotFound`
 - `components/` — reusable pieces:
   - `ProtectedRoute` — only lets logged-in users through, otherwise sends them to `/login`
   - `GuestRoute` — the opposite, for login and signup
@@ -148,9 +184,10 @@ share one database, it's built to be safe to run again: a second run reports
   - `ExercisePicker` — searches the exercise library and adds the chosen exercise
 - `services/` — the only place that talks to the API. `api.js` has the shared
   `apiRequest` helper; there is one file per resource (`authService`, `userService`,
-  `exerciseService`, `workoutService`, `dashboardService`).
+  `exerciseService`, `workoutService`, `dashboardService`, `checkinService`).
 - `context/` + `hooks/useAuth.js` — shared login state (see below)
 - `hooks/useDebouncedValue.js` — waits until the user stops typing before searching
+- `hooks/useGeolocation.js` — reads the location once, on request, with friendly errors
 - `utils/formErrors.js` — turns the API's validation errors into one message per field
 - `utils/dates.js` — converts between date inputs and stored dates (see Key decisions)
 - `constants.js` — goal, equipment and muscle group options; must match
@@ -248,5 +285,5 @@ bounce a logged-in user to the login screen.
 - Tests run one file at a time (`jest --runInBand`) because they share one database.
 - Each test file clears the database when it connects, so data left over from a
   crashed run or a manual check can't break the next run.
-- Pure functions in `utils/` (`wgerMapping`, `recovery`, `recommendations`, `distance`) have
-  unit tests that need no database, written before the code.
+- Pure functions in `utils/` (`wgerMapping`, `recovery`, `recommendations`, `distance`,
+  `checkinDays`) have unit tests that need no database, written before the code.

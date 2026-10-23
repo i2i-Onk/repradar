@@ -176,3 +176,34 @@
   the dashboard.
 - **Lesson:** before debugging code, check *which* version is running: branch,
   server, and the tab itself.
+
+## Fri Oct 23 (afternoon): gym check-ins
+- Recovery dashboard PR (#6) merged.
+- **Built step 6** on `feature/gym-checkins`, working autonomously with Claude Code:
+  CheckIn model, `POST /api/checkins` (verified within `CHECKIN_RADIUS_M`, default
+  150 m; one verified check-in per day), `GET /api/checkins/summary`, pure functions
+  for streaks and weekly progress (test-first), a `useGeolocation` hook, a Check-in
+  page, and a one-tap "Use my current location" in Settings. 46 new tests; 164 pass.
+- **Time zone decision:** the browser sends its time zone; each check-in stores the
+  local calendar date it happened on. Streaks and weeks are calendar maths on those
+  dates, so daylight saving can't shift a day. Tested with Kiritimati (UTC+14) and
+  Pago Pago (UTC−11), which are always on different dates.
+- **Proving the database rule, not just the test.** The "two check-ins at the same
+  moment" test passed, but the service also looks for an existing check-in first, so
+  the test alone didn't show the unique index works. Temporarily switched the lookup
+  off (on a backup copy) and ran the tests: still only one counted, so the index
+  does the job by itself. Restored the file and checked it was byte-for-byte the same.
+- **Testing location in a real browser.** Headless Chrome can fake a position and
+  grant or deny the location permission. Ran three scenarios against the test
+  database: checking in 56 m away (verified, streak 0 → 1), Settings with permission
+  denied (friendly "blocked" message), and saving a new gym location (saved, and the
+  API confirmed it).
+- **Bugs the screenshots caught:** (1) the navbar ran off the screen on phones once
+  the sixth link was added: links now wrap; (2) two success messages showed at once
+  after checking in; (3) my first fix for that brought back the Check in button,
+  inviting a pointless second tap. Now: no button once you've checked in today.
+
+**Key learnings**
+- Store the user's local date at the moment it happens; don't recompute "days" later.
+- To prove a safety net works, switch off the other safety net and test again.
+- Look at the page, not just the test output: layout bugs don't fail tests.
