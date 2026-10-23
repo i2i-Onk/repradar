@@ -9,8 +9,13 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const checkinRoutes = require('./routes/checkinRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { trustProxySetting } = require('./config/rateLimits');
 
 const app = express();
+
+// Number of proxies in front of the app (Render: 1), so req.ip is the real
+// visitor's address. Rate limiting depends on it. See config/rateLimits.js.
+app.set('trust proxy', trustProxySetting());
 
 // Security headers (protects against common browser-based attacks)
 app.use(helmet());

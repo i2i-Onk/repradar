@@ -17,3 +17,8 @@ try {
 // Test-only settings. Real secrets are never used in tests.
 process.env.JWT_SECRET = 'test-secret';
 process.env.JWT_EXPIRES_IN = '1h';
+
+// High rate limits so the many signups and logins across the test suite aren't
+// throttled. tests/rateLimit.test.js sets its own small limits.
+process.env.LOGIN_RATE_LIMIT_MAX ??= '10000';
+process.env.SIGNUP_RATE_LIMIT_MAX ??= '10000';
