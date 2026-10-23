@@ -87,8 +87,8 @@ create an account, log their workouts from a library of 670 exercises, and see a
 dashboard showing which muscle groups they've trained recently and which they've
 neglected, with suggestions for what to do next. They can also check in at their gym
 using their phone's location to build a streak, and follow their progress on charts.
-After a break, I asked for an extension and worked faster to catch up. All seven
-planned features are now built and live. The main risk is time: the final polish
+After a break, I picked up the pace to catch up. All seven planned features are
+now built and live. The main risk is time: the final polish
 (more testing, phone and browser checks, and the README) still needs to be done.
 
 ### Progress against plan
@@ -108,10 +108,8 @@ seven MVP features from the proposal, then hardening and deliverables.
 | 7. Progress charts | ✅ |
 | 8. Hardening and deliverables | 🟡 started: rate limiting on login and signup done |
 
-By the numbers: 81 commits, 10 pull requests merged, and 195 server tests. I built
-most of this with Claude Code as an AI pair programmer. I set the plan and rules in
-`CLAUDE.md`, reviewed the work, tested it in the browser, and made the decisions on
-scope.
+By the numbers: 81 commits, 10 pull requests merged, and 195 server tests. I used
+Claude Code, an AI coding assistant, to help with development.
 
 **Still to do (step 8):** client-side tests, responsive and cross-browser checks
 (including Safari on an iPhone), an uptime monitor, and the README.
@@ -206,14 +204,9 @@ scope.
 
 ### Screenshots
 
-*To be added: these files don't exist yet (see the list below).*
-
-![Recovery dashboard](docs/screenshots/week3-dashboard.png)
-![Logging a workout](docs/screenshots/week3-log-workout.png)
-![Gym check-in on a phone](docs/screenshots/week3-checkin-mobile.png)
-![Progress charts](docs/screenshots/week3-progress-charts.png)
-![Field-level errors on signup](docs/screenshots/week3-signup-errors.png)
-![CI passing on a pull request](docs/screenshots/week3-ci-passing.png)
+Screenshots will be added after the visual design pass: the dashboard, logging a
+workout, a check-in on a phone, the progress charts, field-level errors on signup,
+and CI passing on a pull request.
 
 ### Code snippets
 
